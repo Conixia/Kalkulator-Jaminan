@@ -259,24 +259,26 @@ if hitung_btn:
         if len(st.session_state.history) > 10:
             st.session_state.history.pop()
 
-        # Result box (tanpa formula-box di dalam)
-        box_class   = "result-box minimum" if is_min else "result-box"
-        amt_class   = "result-amount minimum" if is_min else "result-amount"
-        pill_result = '<span class="pill pill-gold">&#9888; Nilai minimum</span>' if is_min else ""
+        # Result box — hanya label + angka saja di dalam HTML
+        box_class = "result-box minimum" if is_min else "result-box"
+        amt_class = "result-amount minimum" if is_min else "result-amount"
 
         st.markdown(f"""
         <div class="{box_class}">
             <div class="result-label">Hasil Perhitungan</div>
             <div class="{amt_class}">{fmt_rp(result)}</div>
-            <div class="meta-row">
-                <span class="pill pill-blue">{jenis}</span>
-                <span class="pill">{fmt_short(nilai)}</span>
-                <span class="pill">{jw} hari</span>
-                <span class="pill">{tarif*100:.3f}%</span>
-                {pill_result}
-            </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # Meta info pakai columns native Streamlit
+        n_cols = 5 if is_min else 4
+        cols = st.columns(n_cols)
+        cols[0].metric("Jenis", jenis)
+        cols[1].metric("Nilai Jaminan", fmt_short(nilai))
+        cols[2].metric("Jangka Waktu", f"{jw} hari")
+        cols[3].metric("Tarif", f"{tarif*100:.3f}%")
+        if is_min:
+            cols[4].metric("Status", "Minimum")
 
         # Formula breakdown — pakai st.code agar tidak ada masalah render HTML
         if is_normal:
