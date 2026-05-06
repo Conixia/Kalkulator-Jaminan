@@ -259,43 +259,99 @@ if hitung_btn:
         if len(st.session_state.history) > 10:
             st.session_state.history.pop()
 
-        # Result box — hanya label + angka saja di dalam HTML
-        box_class = "result-box minimum" if is_min else "result-box"
-        amt_class = "result-amount minimum" if is_min else "result-amount"
+        # ── Siapkan semua nilai sebagai string Python dulu ──
+        box_border  = "#E8B84B" if is_min else "#4A90D9"
+        box_bg      = "linear-gradient(135deg,#3a2800,#1a1200)" if is_min else "linear-gradient(135deg,#1a3a5c,#0d2240)"
+        amt_color   = "#E8B84B" if is_min else "#3ECFB2"
+        result_str  = fmt_rp(result)
+        jenis_str   = jenis
+        nilai_str   = fmt_rp(nilai)
+        jw_str      = str(jw) + " hari"
+        tarif_str   = f"{tarif*100:.3f}%"
+        mode_str    = "Normal (JW ≤ 90 hari)" if is_normal else f"Proporsional (JW > 90 hari)"
+        min_badge   = '<span style="background:rgba(232,184,75,.2);color:#E8B84B;border-radius:99px;padding:3px 12px;font-size:12px;font-weight:600;">⚠ Nilai Minimum</span>' if is_min else ""
 
-        st.markdown(f"""
-        <div class="{box_class}">
-            <div class="result-label">Hasil Perhitungan</div>
-            <div class="{amt_class}">{fmt_rp(result)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Meta info pakai columns native Streamlit
-        n_cols = 5 if is_min else 4
-        cols = st.columns(n_cols)
-        cols[0].metric("Jenis", jenis)
-        cols[1].metric("Nilai Jaminan", fmt_short(nilai))
-        cols[2].metric("Jangka Waktu", f"{jw} hari")
-        cols[3].metric("Tarif", f"{tarif*100:.3f}%")
-        if is_min:
-            cols[4].metric("Status", "Minimum")
-
-        # Formula breakdown — pakai st.code agar tidak ada masalah render HTML
         if is_normal:
-            rumus_line1 = f"{fmt_rp(nilai)} x {tarif*100:.3f}%"
-            rumus_line2 = f"= {fmt_rp(raw_result)}"
-            rumus_line3 = f"= {fmt_rp(result)}"
-            formula_text = f"Rumus  : Nilai Jaminan x Tarif  (JW <= 90 hari)\n{'─'*45}\n{rumus_line1}\n{rumus_line2}\n{rumus_line3}"
+            rumus_baris1 = fmt_rp(nilai) + " &times; " + f"{tarif*100:.3f}%"
+            rumus_baris2 = "= " + fmt_rp(raw_result)
+            rumus_baris3 = ""
         else:
-            rumus_line1 = f"{fmt_rp(nilai)} x (90 / {jw}) x {tarif*100:.3f}%"
-            rumus_line2 = f"= {fmt_rp(nilai)} x {90/jw:.6f} x {tarif*100:.3f}%"
-            rumus_line3 = f"= {fmt_rp(raw_result)}"
-            formula_text = f"Rumus  : Nilai Jaminan x (90 / JW) x Tarif  (JW > 90 hari)\n{'─'*45}\n{rumus_line1}\n{rumus_line2}\n{rumus_line3}"
+            faktor       = round(90 / jw, 6)
+            rumus_baris1 = fmt_rp(nilai) + f" &times; (90 &divide; {jw}) &times; " + f"{tarif*100:.3f}%"
+            rumus_baris2 = fmt_rp(nilai) + f" &times; {faktor} &times; " + f"{tarif*100:.3f}%"
+            rumus_baris3 = "= " + fmt_rp(raw_result)
 
         if is_min:
-            formula_text += f"\n{'─'*45}\nHasil hitung : {fmt_rp(raw_result)}\nMinimum      : {fmt_rp(MINIMUM)}  ← yang dipakai"
+            min_baris = (
+                '<tr><td colspan="2" style="border-top:1px solid rgba(255,255,255,.1);padding-top:10px;'
+                'color:#8A9BB0;font-size:12px;">Hasil hitung</td>'
+                '<td style="border-top:1px solid rgba(255,255,255,.1);padding-top:10px;'
+                'color:#8A9BB0;font-size:12px;text-align:right;">' + fmt_rp(raw_result) + '</td></tr>'
+                '<tr><td colspan="2" style="color:#E8B84B;font-weight:600;">Minimum berlaku</td>'
+                '<td style="color:#E8B84B;font-weight:600;text-align:right;">' + fmt_rp(MINIMUM) + '</td></tr>'
+            )
+        else:
+            min_baris = ""
 
-        st.code(formula_text, language=None)
+        rumus3_html = ("<tr><td colspan='2'></td><td style='text-align:right;color:#FFFFFF;'>"
+                       + rumus_baris3 + "</td></tr>") if rumus_baris3 else ""
+
+        html = (
+            '<div style="background:' + box_bg + ';border:1.5px solid ' + box_border + ';'
+            'border-radius:18px;padding:32px 28px 24px;margin:20px 0;">'
+
+            # Label
+            '<p style="text-align:center;font-size:11px;font-weight:600;letter-spacing:.12em;'
+            'text-transform:uppercase;color:#8A9BB0;margin:0 0 10px;">Hasil Perhitungan</p>'
+
+            # Angka besar
+            '<p style="text-align:center;font-family:Fraunces,serif;font-size:52px;font-weight:700;'
+            'color:' + amt_color + ';line-height:1;margin:0 0 20px;">' + result_str + '</p>'
+
+            # Badge minimum (jika ada)
+            + ('<p style="text-align:center;margin:0 0 20px;">' + min_badge + '</p>' if is_min else '')
+
+            # Tabel info
+            '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">'
+            '<tr>'
+            '<td style="width:25%;background:rgba(255,255,255,.05);border-radius:10px 0 0 10px;'
+            'padding:12px 16px;text-align:center;">'
+            '<div style="font-size:10px;color:#8A9BB0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Jenis</div>'
+            '<div style="font-size:14px;font-weight:600;color:#4A90D9;">' + jenis_str + '</div></td>'
+
+            '<td style="width:25%;background:rgba(255,255,255,.05);padding:12px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.06);">'
+            '<div style="font-size:10px;color:#8A9BB0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Nilai Jaminan</div>'
+            '<div style="font-size:13px;font-weight:600;color:#FFFFFF;font-family:DM Mono,monospace;">' + nilai_str + '</div></td>'
+
+            '<td style="width:25%;background:rgba(255,255,255,.05);padding:12px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.06);">'
+            '<div style="font-size:10px;color:#8A9BB0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Jangka Waktu</div>'
+            '<div style="font-size:14px;font-weight:600;color:#FFFFFF;">' + jw_str + '</div></td>'
+
+            '<td style="width:25%;background:rgba(255,255,255,.05);border-radius:0 10px 10px 0;padding:12px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.06);">'
+            '<div style="font-size:10px;color:#8A9BB0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Tarif</div>'
+            '<div style="font-size:14px;font-weight:600;color:#E8B84B;font-family:DM Mono,monospace;">' + tarif_str + '</div></td>'
+            '</tr></table>'
+
+            # Formula
+            '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);'
+            'border-radius:12px;padding:16px 20px;">'
+            '<p style="font-size:10px;color:#8A9BB0;text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px;">'
+            'Rincian Rumus — ' + mode_str + '</p>'
+            '<table style="width:100%;border-collapse:collapse;font-family:DM Mono,monospace;font-size:13px;">'
+            '<tr><td colspan="2" style="color:#8A9BB0;padding-bottom:4px;">Perhitungan</td>'
+            '<td style="text-align:right;color:#FFFFFF;padding-bottom:4px;">' + rumus_baris1 + '</td></tr>'
+            '<tr><td colspan="2" style="color:#8A9BB0;padding-bottom:4px;"></td>'
+            '<td style="text-align:right;color:#FFFFFF;padding-bottom:4px;">' + rumus_baris2 + '</td></tr>'
+            + rumus3_html
+            + '<tr><td colspan="2" style="border-top:1px solid rgba(255,255,255,.1);padding-top:10px;'
+            'color:#8A9BB0;">Hasil</td>'
+            '<td style="border-top:1px solid rgba(255,255,255,.1);padding-top:10px;'
+            'color:' + amt_color + ';font-weight:600;text-align:right;font-size:15px;">' + result_str + '</td></tr>'
+            + min_baris
+            + '</table></div></div>'
+        )
+
+        st.markdown(html, unsafe_allow_html=True)
 
         if is_min:
             st.warning(f"⚠ Hasil hitungan ({fmt_rp(raw_result)}) di bawah minimum — ditampilkan sebagai **Rp 75.000**")
