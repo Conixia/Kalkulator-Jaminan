@@ -2,7 +2,7 @@ import streamlit as st
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Kalkulator Jaminan - Reno",
+    page_title="Kalkulator Jaminan",
     page_icon="🏦",
     layout="centered",
 )
@@ -259,22 +259,10 @@ if hitung_btn:
         if len(st.session_state.history) > 10:
             st.session_state.history.pop()
 
-        # Result box
+        # Result box (tanpa formula-box di dalam)
         box_class   = "result-box minimum" if is_min else "result-box"
         amt_class   = "result-amount minimum" if is_min else "result-amount"
-        pill_result = f'<span class="pill pill-gold">⚠ Nilai minimum</span>' if is_min else ""
-
-        if is_normal:
-            rumus1 = f"{fmt_rp(nilai)} × {tarif*100:.3f}%"
-            rumus2 = f"= {fmt_rp(raw_result)}"
-        else:
-            rumus1 = f"{fmt_rp(nilai)} × (90 ÷ {jw}) × {tarif*100:.3f}%"
-            rumus2 = f"= {fmt_rp(nilai)} × {90/jw:.6f} × {tarif*100:.3f}%"
-
-        if is_min:
-            rumus3 = f'<span class="warn">Hasil hitung: {fmt_rp(raw_result)} → Minimum berlaku: {fmt_rp(MINIMUM)}</span>'
-        else:
-            rumus3 = f'<span class="eq">= {fmt_rp(result)}</span>'
+        pill_result = '<span class="pill pill-gold">&#9888; Nilai minimum</span>' if is_min else ""
 
         st.markdown(f"""
         <div class="{box_class}">
@@ -287,13 +275,25 @@ if hitung_btn:
                 <span class="pill">{tarif*100:.3f}%</span>
                 {pill_result}
             </div>
-            <div class="formula-box">
-                <span class="val">{rumus1}</span><br>
-                <span class="val">{rumus2}</span><br>
-                {rumus3}
-            </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # Formula breakdown — pakai st.code agar tidak ada masalah render HTML
+        if is_normal:
+            rumus_line1 = f"{fmt_rp(nilai)} x {tarif*100:.3f}%"
+            rumus_line2 = f"= {fmt_rp(raw_result)}"
+            rumus_line3 = f"= {fmt_rp(result)}"
+            formula_text = f"Rumus  : Nilai Jaminan x Tarif  (JW <= 90 hari)\n{'─'*45}\n{rumus_line1}\n{rumus_line2}\n{rumus_line3}"
+        else:
+            rumus_line1 = f"{fmt_rp(nilai)} x (90 / {jw}) x {tarif*100:.3f}%"
+            rumus_line2 = f"= {fmt_rp(nilai)} x {90/jw:.6f} x {tarif*100:.3f}%"
+            rumus_line3 = f"= {fmt_rp(raw_result)}"
+            formula_text = f"Rumus  : Nilai Jaminan x (90 / JW) x Tarif  (JW > 90 hari)\n{'─'*45}\n{rumus_line1}\n{rumus_line2}\n{rumus_line3}"
+
+        if is_min:
+            formula_text += f"\n{'─'*45}\nHasil hitung : {fmt_rp(raw_result)}\nMinimum      : {fmt_rp(MINIMUM)}  ← yang dipakai"
+
+        st.code(formula_text, language=None)
 
         if is_min:
             st.warning(f"⚠ Hasil hitungan ({fmt_rp(raw_result)}) di bawah minimum — ditampilkan sebagai **Rp 75.000**")
