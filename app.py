@@ -45,7 +45,7 @@ if "history" not in st.session_state:
     st.session_state.history = []
 
 st.markdown('<div class="kj-badge">🏦 Alat Perhitungan</div>', unsafe_allow_html=True)
-st.markdown('<div class="kj-title">Kalkulator <span>Jaminan</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="kj-title">Kalkulator Surety Bond <span>Jamkrindo Purwokerto</span></div>', unsafe_allow_html=True)
 st.markdown('<div class="kj-sub">Penawaran &middot; Pelaksanaan &middot; Uang Muka &middot; Pemeliharaan &mdash; Minimum Rp 75.000</div>', unsafe_allow_html=True)
 
 st.markdown("""
